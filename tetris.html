@@ -1,0 +1,153 @@
+<html>
+	<body>
+		<canvas id="canvas" width="400px" height="800px">
+		</canvas>
+		<script>
+			var rows = 30;
+			var columns = 10;
+			var shapes = [
+				[[1,1,1,1]],
+				[[0,0,1],[1,1,1]],
+				[[1,0,0],[1,1,1]],
+				[[1,1],[1,1]],
+				[[0,1,1],[1,1,0]],
+				[[1,1,1],[0,1,0]],
+				[[1,1,0],[0,1,1]],
+  			];
+
+			var canvas = document.getElementById("canvas");
+			var ctx = canvas.getContext("2d");
+			var width = ctx.canvas.width / columns;
+		    var height = ctx.canvas.height / rows;
+
+			var score = 0;
+			var board = Array.from(Array(columns), () => new Array(rows))
+			var y = 0, x = 0, current = 0, rotation = 0;
+			next();
+
+			function current_length()
+			{
+				if (rotation % 2 == 0)
+					return shapes[current].length;
+				else
+					return shapes[current][0].length;
+			}
+			function current_height()
+			{
+				if (rotation % 2 == 1)
+					return shapes[current].length;
+				else
+					return shapes[current][0].length;
+			}
+
+			function get_shape(shapes, i, j)
+			{
+				h = shapes[current].length-1;
+				w = shapes[current][0].length-1;
+				if (rotation == 0) return shapes[current][i][j];
+				if (rotation == 1) return shapes[current][j][w-i];
+				if (rotation == 2) return shapes[current][h-i][w-j];
+				if (rotation == 3) return shapes[current][h-j][i];
+			}
+
+			function next()
+			{
+				current = Math.floor(Math.random() * shapes.length);
+				rotation = Math.floor(Math.random() * 4);
+				y = 0;
+				x = Math.floor((columns - current_length()) / 2)
+			}
+
+			function draw()
+			{
+				var need_next = false;
+
+				for (var i = 0; i < columns; i++)
+				{
+					for (var j = 0; j < rows; j++)
+					{
+						if (board[i][j])
+							ctx.fillStyle = "gray";
+						else
+							ctx.fillStyle = "#eeeeee";
+						ctx.fillRect(width * i, height * j, width, height);
+					}
+				}
+
+				ctx.fillStyle = "black";
+				for (var i = 0; i < current_length(); i++)
+				{
+					for (var j = 0; j < current_height(); j++)
+					{
+						if (get_shape(shapes, i, j))
+						{
+							ctx.fillRect(width * (i + x) + 1, height * (j + y) + 1, width - 2, height - 2);
+							if (j + y >= rows - 1 || board[i + x][j + y + 1])
+								need_next = true;
+						}
+					}
+				}
+
+				ctx.fillStyle = "black";
+				ctx.font = "30px Arial";
+				ctx.fillText("Score: " + score, 0, 30)
+
+				return need_next;
+			}
+
+			function loop()
+			{
+				need_next = draw();
+
+				if (need_next)
+				{
+					if (y == 0)
+						clearInterval(loopID);
+					else
+					{
+						for (var i = 0; i < current_length(); i++)
+							for (var j = 0; j < current_height(); j++)	
+								if (get_shape(shapes, i, j))
+									board[i + x][j + y] = 1;
+						for (var j = 0; j < rows; j++)
+						{
+							full = true;
+							for (var i = 0; i < columns; i++)
+								if (!board[i][j])
+									full = false;
+							if (full)
+							{
+								score += 10;
+								for (var i = 0; i < columns; i++)
+									for (var k = j; k >= 1; k--)
+										board[i][k] = board[i][k - 1];
+							}
+						}
+						next();
+						score++;
+					}
+				}
+				else
+					y++;
+			}
+			var loopID = setInterval(loop, 100);
+
+			function keypress(e)
+			{
+				if (e.key == "ArrowLeft" && x > 0)
+					x--;
+				if (e.key == "ArrowRight" && x < columns - current_length())
+					x++;
+				if (e.key == "ArrowUp")
+					rotation = (rotation + 3) % 4;
+				if (e.key == "ArrowDown")
+					rotation = (rotation + 1) % 4;
+				if (e.key == " ")
+					while (!draw())
+						y++;
+				draw();
+			}
+			document.addEventListener("keydown", keypress);
+		</script>
+	</body>
+</html>
