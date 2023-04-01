@@ -1,4 +1,13 @@
 <html>
+	<head>
+		<title>Tetris</title>
+		<style>
+			button {
+				height: 5em;
+				width: 75px;
+			}
+		</style>
+	</head>
 	<body>
 		<canvas id="canvas" width="400px" height="800px">
 		</canvas>
@@ -18,7 +27,7 @@
 			var canvas = document.getElementById("canvas");
 			var ctx = canvas.getContext("2d");
 			var width = ctx.canvas.width / columns;
-		    var height = ctx.canvas.height / rows;
+			var height = ctx.canvas.height / rows;
 
 			var score = 0;
 			var board = Array.from(Array(columns), () => new Array(rows))
@@ -48,6 +57,33 @@
 				if (rotation == 1) return shapes[current][j][w-i];
 				if (rotation == 2) return shapes[current][h-i][w-j];
 				if (rotation == 3) return shapes[current][h-j][i];
+			}
+
+			function check_move(dx, dy, drotation)
+			{
+				var can_move = true;
+				old_rotation = rotation;
+				rotation = (rotation + drotation) % 4;
+
+				if (x + dx < 0 || y + dy < 0)
+					can_move = false;
+				if (x + dx + current_length() > columns || y + dy + current_height() > rows)
+					can_move = false;
+
+				for (var i = 0; i < current_length() && i + x + dx < columns; i++)
+				{
+					for (var j = 0; j < current_height() && j + y + dy < rows; j++)
+					{
+						if (get_shape(shapes, i, j))
+						{
+							if (board[i + x + dx][j + y + dy])
+								can_move = false;
+						}
+					}
+				}
+
+				rotation = old_rotation;
+				return can_move;
 			}
 
 			function next()
@@ -132,22 +168,41 @@
 			}
 			var loopID = setInterval(loop, 100);
 
+			function move(dx, drotation)
+			{
+				if (check_move(dx, 0, drotation))
+				{
+					x += dx;
+					rotation = (rotation + drotation) % 4;
+					draw();
+				}
+			}
+			function drop()
+			{
+				while (!draw())
+					y++;
+			}
 			function keypress(e)
 			{
-				if (e.key == "ArrowLeft" && x > 0)
-					x--;
-				if (e.key == "ArrowRight" && x < columns - current_length())
-					x++;
+				if (e.key == "ArrowLeft")
+					move(-1, 0);
+				if (e.key == "ArrowRight")
+					move(+1, 0);
 				if (e.key == "ArrowUp")
-					rotation = (rotation + 3) % 4;
+					move(0, 3);
 				if (e.key == "ArrowDown")
-					rotation = (rotation + 1) % 4;
+					move(0, 1);
 				if (e.key == " ")
-					while (!draw())
-						y++;
-				draw();
+					drop();
 			}
 			document.addEventListener("keydown", keypress);
 		</script>
+
+		<br>
+		<button onclick="javascript:move(-1, 0);">&larr;</button>
+		<button onclick="javascript:move(+1, 0);">&rarr;</button>
+		<button onclick="javascript:move(0, 3);">&uarr;</button>
+		<button onclick="javascript:move(0, 1);">&darr;</button>
+		<button onclick="javascript:drop();">&blank;</button>
 	</body>
 </html>
